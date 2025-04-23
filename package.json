@@ -1,0 +1,25 @@
+{
+  "name": "lattes",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "type": "module",
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "@electron/remote": "^2.1.2",
+    "@google-cloud/speech": "^6.7.0",
+    "csv-writer": "^1.6.0",
+    "electron": "^34.0.2",
+    "node-fetch": "^3.3.2",
+    "node-html-parser": "^7.0.1",
+    "node-wav": "^0.0.2",
+    "node-witai-speech": "^1.0.2",
+    "puppeteer": "^24.1.1",
+    "selenium-webdriver": "^4.28.1",
+    "vosk": "^0.3.39"
+  }
+}
