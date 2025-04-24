@@ -52,7 +52,7 @@ function extractArticles(researcherName, root, filename) {
     const doi = article.querySelector('.icone-doi')?._attrs.href
 
     if (year < startingYear || year > endingYear) continue
-    //                                               v -este ponto tem que estar entre espaços
+    //                                               v -este ponto abaixo do "v" tem que estar entre espaços: " . "
     // <SOBRENOME, N.;SOBRENOME2, N2.; SOBRENOME,N3. . ARTIGO ....
     const textArray = cleanText(article.text)
       .match(/\d{4}?(.+)/)[1]
@@ -98,10 +98,10 @@ function extractProjects(researcherName, root, filename) {
     let nextElement = getNthNextElement(project, 1)
     let [init, end] = nextElement.querySelector('b').innerHTML.split(' - ')
     init = Number(init)
-    end = end == 'Atual' ? new Date().getFullYear() : Number(end)
+    let endN = end == 'Atual' ? new Date().getFullYear() : Number(end)
 
     if (startingYear < init && endingYear < init) continue
-    if (startingYear > end) continue
+    if (startingYear > endN) continue
 
     // if (startYear < startingYear) continue
 
