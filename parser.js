@@ -4,8 +4,10 @@ import { parse } from 'node-html-parser'
 import { createObjectCsvWriter } from 'csv-writer'
 import { count } from 'console'
 import { resolveAny } from 'dns'
+import { start } from 'repl'
 
-const startingYear = 2020
+const startingYear = 2024
+const endingYear = 2024
 
 // Função utilitária para limpar texto
 function cleanText(text) {
@@ -49,21 +51,22 @@ function extractArticles(researcherName, root, filename) {
     // const doiURL = article.querySelector('[class="icone-producao icone-doi"]')
     const doi = article.querySelector('.icone-doi')?._attrs.href
 
-    if (year < startingYear) continue
-
-    const text = cleanText(article.text)
+    if (year < startingYear || year > endingYear) continue
+    //                                               v -este ponto tem que estar entre espaços
+    // <SOBRENOME, N.;SOBRENOME2, N2.; SOBRENOME,N3. . ARTIGO ....
+    const textArray = cleanText(article.text)
       .match(/\d{4}?(.+)/)[1]
       .split(' . ')
 
-    if (text.length === 1) {
-      console.log('Não foi possível separar o(s) autore(s)')
+    if (textArray.length === 1) {
+      console.log('[ARTIGOS] Não foi possível separar o(s) autore(s)')
       console.log(`Lattes: ${researcherName} | Arquivo: ${filename}`)
-      console.log(`Linha: ${text}`)
+      console.log(`Linha: ${article.text}`)
       console.log('-'.repeat(70))
       countErrors += 1
     }
-    const authors = text[0]
-    const title = text[1]
+    const authors = textArray[0]
+    const title = textArray[1]
     let doiMatch = []
     if (title) doiMatch = title.match(/doi\.org\/(.*?)\s/)
 
@@ -93,9 +96,14 @@ function extractProjects(researcherName, root, filename) {
   //projectsSection.forEach(project => {
   for (let project of projectsSection) {
     let nextElement = getNthNextElement(project, 1)
-    const [startYear, endYear] = nextElement.querySelector('b').innerHTML.split(' - ')
+    let [init, end] = nextElement.querySelector('b').innerHTML.split(' - ')
+    init = Number(init)
+    end = end == 'Atual' ? new Date().getFullYear() : Number(end)
 
-    if (Number(startYear) < startingYear) continue
+    if (startingYear < init && endingYear < init) continue
+    if (startingYear > end) continue
+
+    // if (startYear < startingYear) continue
 
     nextElement = getNthNextElement(project, 2)
 
@@ -124,12 +132,12 @@ function extractProjects(researcherName, root, filename) {
     //   process.exit(1)
     // }
 
-    if (endYear) {
+    if (end) {
       projects.push({
         researcher: researcherName,
         title: cleanText(title),
-        startYear,
-        endYear,
+        startYear: init,
+        endYear: end,
         coordinator: coordinator,
         members: members,
         funders,
@@ -166,7 +174,7 @@ function extractParticipationInExamBoards(researcherName, root, filename) {
         console.log(researcherName, 'Arquivo:', filename)
         process.exit()
       }
-      if (year < startingYear) continue
+      if (year < startingYear || year > endingYear) continue
 
       participations.push({
         year,
@@ -208,13 +216,15 @@ async function processLattesCurriculum() {
 
   for (const file of files) {
     const html = fs.readFileSync(path.join(outputDir, file), 'utf-8')
+    // console.log(file)
     const root = parse(html)
+    console.log(file)
     const researcherName = root.querySelector('h2.nome').innerHTML
 
-    // allArticles.push(...extractArticles(researcherName, root, file))
-    // allProjects.push(...extractProjects(researcherName, root, file))
+    allArticles.push(...extractArticles(researcherName, root, file))
+    allProjects.push(...extractProjects(researcherName, root, file))
     allExams.push(...extractParticipationInExamBoards(researcherName, root, file))
-    // allCommittees.push(...extractCommittees(researcherName, root, fil))
+    allCommittees.push(...extractCommittees(researcherName, root, file))
   }
 
   // Criar arquivos CSV

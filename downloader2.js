@@ -1,4 +1,4 @@
-import { Builder, By, Key } from 'selenium-webdriver'
+import { Builder, By, Browser } from 'selenium-webdriver'
 import firefox from 'selenium-webdriver/firefox.js'
 import path from 'path'
 import { fileURLToPath } from 'url'
@@ -20,10 +20,12 @@ options.setPreference('browser.helperApps.alwaysAsk.force', false) // Do not ask
 options.setPreference('browser.download.manager.showWhenStarting', false) // Do not show anything (no pop up)
 options.setPreference('browser.helperApps.neverAsk.saveToDisk', 'application/zip') // MIME type for zip
 options.setBinary('/snap/firefox/current/usr/lib/firefox/firefox')
+// options.setBinary('"/usr/bin/flatpak run org.mozilla.firefox"')
+// Define a new firefox instance
 console.log('[INFO] Preferences: OK')
 
-// Define a new firefox instance
-const driver = new Builder().forBrowser('firefox').setFirefoxOptions(options).build()
+const driver = new Builder().forBrowser(Browser.FIREFOX).setFirefoxOptions(options).build()
+
 const width = 800
 const height = 800
 
@@ -32,23 +34,23 @@ driver.manage().window().setRect({ width, height })
 console.log('[INFO] Firefox: opened OK')
 
 const lattes_ids = {
-  'A. Misson': '4020121129398235',
+  A_Misson: '4020121129398235',
   César: '9086857312391080',
   Chang: '1989662459244838',
-  'Daniel Bonotto': '7430102726026121',
+  Daniel: '7430102726026121',
   Dionísio: '2302002033171923',
   George: '4074004628758766',
   Giancarlo: '7492100028914726',
   Guillermo: '8837180892948207',
-  'J. Alexandre': '1994317879078816',
-  'J.E. Zaine': '5491545942075288',
+  J_Alexandre: '1994317879078816',
+  JE_Zaine: '5491545942075288',
   Lucas: '1333845337012256',
-  'Lucas Furlan': '9813790962724241',
+  Lucas_Furlan: '9813790962724241',
   Matheus: '6025086815170993',
   Regiane: '9167526003742435',
-  'R.J. Bertini': '3157052111423047',
-  'Rodrigo Cerri': '0791368504458365',
-  'Rodrigo Prudente': '0360977622257152',
+  RJ_Bertini: '3157052111423047',
+  Rodrigo_Cerri: '0791368504458365',
+  Rodrigo_Prudente: '0360977622257152',
   Rosemarie: '8936275161197131',
   Sergio: '1876676856135412',
   Washington: '3505628102830588',
@@ -73,26 +75,31 @@ async function waitForSubmitButton(driver, timeout = 300000) {
   throw new Error('Timeout aguardando resolução do captcha')
 }
 
-async function savePageHTML(driver, idcnpq) {
+async function savePageHTML(driver, name) {
   const html = await driver.getPageSource()
-  const filePath = path.join(pathToDownload, `lattes_${idcnpq}.html`)
+  if (!fs.existsSync(pathToDownload)) {
+    await fs.mkdirSync(pathToDownload)
+  }
+  const filePath = path.join(pathToDownload, name)
   fs.writeFileSync(filePath, html, 'utf8')
   return filePath
 }
 
-async function checkFileExists(idcnpq) {
-  const htmlPath = path.join(pathToDownload, `lattes_${idcnpq}.html`)
+async function checkFileExists(name) {
+  const htmlPath = path.join(pathToDownload, name)
   return fs.existsSync(htmlPath)
 }
-
 ;(async function main() {
   try {
-    for (const idcnpq of Object(lattes_ids).values) {
+    for (const [name, idcnpq] of Object.entries(lattes_ids)) {
+      const fileName = `lattes_${name}_${idcnpq}.html`
       // Verifica se o arquivo já existe
-      if (await checkFileExists(idcnpq)) {
+      if (await checkFileExists(fileName)) {
         console.log(`[INFO] Arquivo para ${idcnpq} já existe. Pulando...`)
         continue
       }
+      console.info(`[INFO] Baixando lattes de ${name} - id: ${idcnpq}`)
+      // console.log(idcnpq, name)
 
       const location = lattesUrl + idcnpq
       await driver.get(location)
@@ -115,7 +122,7 @@ async function checkFileExists(idcnpq) {
         console.log(`[INFO] Firefox: download iniciado para ${idcnpq}`)
 
         // Salva o HTML da página
-        const filePath = await savePageHTML(driver, idcnpq)
+        const filePath = await savePageHTML(driver, fileName)
         console.log(`[INFO] HTML salvo em: ${filePath}`)
 
         await driver.sleep(3000)
@@ -126,7 +133,7 @@ async function checkFileExists(idcnpq) {
       }
     }
   } catch (error) {
-    console.error('[ERRO] Falha geral no processo:', error.message)
+    console.error('[ERRO] Falha geral no processo:', error.message, error.stack)
   } finally {
     await driver.quit()
     console.log('[INFO] Navegador fechado')
